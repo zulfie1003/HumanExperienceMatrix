@@ -13,7 +13,7 @@ Users can ask a question, choose the perspectives they want, receive a structure
 - Conversation history, saved conversations, and single-conversation views
 - Profile settings for authenticated users
 - Local-first SQLite development setup
-- Demo AI fallback when no Anthropic API key is configured
+- Groq-backed AI responses
 - Service-layer architecture for clean separation between UI, API routes, AI logic, and persistence
 
 ## Tech Stack
@@ -25,7 +25,7 @@ Users can ask a question, choose the perspectives they want, receive a structure
 | Components | Radix UI primitives, Lucide icons |
 | Auth | NextAuth v5, Prisma adapter |
 | Database | SQLite for local development, Prisma ORM |
-| AI | Anthropic Claude API with local demo fallback |
+| AI | Groq API |
 | Tooling | ESLint, TypeScript, Prisma CLI |
 
 ## Application Flow
@@ -35,7 +35,7 @@ User question
   -> /api/chat
   -> AI service
   -> Prompt builder
-  -> Anthropic Claude or local demo response
+  -> Groq response
   -> Conversation service
   -> Prisma database
   -> Response UI and dashboard history
@@ -77,7 +77,10 @@ AUTH_GOOGLE_ID=""
 AUTH_GOOGLE_SECRET=""
 NEXT_PUBLIC_GOOGLE_ENABLED="false"
 
-ANTHROPIC_API_KEY="your-anthropic-api-key"
+GROQ_API_KEY="your-groq-api-key"
+GROQ_MODEL="llama-3.3-70b-versatile"
+GROQ_BASE_URL="https://api.groq.com/openai/v1"
+GROQ_MAX_TOKENS="4096"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
@@ -87,7 +90,7 @@ Generate a secure auth secret:
 openssl rand -base64 32
 ```
 
-`ANTHROPIC_API_KEY` is optional for local development. If it is left as the placeholder value, the app returns a deterministic demo response so the full product flow still works.
+`GROQ_API_KEY` must be set to a real Groq API key. If it is missing or still set to the placeholder value, the chat API returns a clear configuration error instead of a demo response.
 
 ### Database Setup
 
@@ -156,7 +159,7 @@ hooks/
 
 lib/
   auth.ts                  NextAuth configuration
-  claude.ts                Anthropic client setup
+  groq.ts                  Groq client setup
   prisma.ts                Prisma singleton
   prompts.ts               System and user prompt builders
   utils.ts                 Shared utilities
@@ -193,17 +196,12 @@ NEXT_PUBLIC_GOOGLE_ENABLED="true"
 
 ## AI Mode
 
-The AI service has two modes:
-
-- Demo mode: used when `ANTHROPIC_API_KEY` is missing or still set to the placeholder
-- Live mode: used when a real Anthropic API key is provided
-
-Live mode calls Anthropic and expects a strict JSON response shaped by `types/index.ts`. Demo mode returns the same shape so the frontend, dashboard, and persistence flow can be tested without external API access.
+The AI service always calls Groq and expects a strict JSON response shaped by `types/index.ts`. There is no local demo fallback.
 
 ## Architecture Notes
 
 - API routes stay thin and delegate business logic to services.
-- AI provider logic is isolated in `services/ai.service.ts` and `lib/claude.ts`.
+- AI provider logic is isolated in `services/ai.service.ts` and `lib/groq.ts`.
 - Conversation storage and response parsing live in `conversation.service.ts`.
 - The response contract is centralized in `types/index.ts`.
 - The AI layer is RAG-ready; retrieval context can be injected before the LLM call in `services/ai.service.ts`.
@@ -215,7 +213,7 @@ Before deploying:
 - Replace all placeholder secrets with real production values.
 - Use a production-ready database instead of the local SQLite file.
 - Configure `AUTH_URL`, `NEXTAUTH_URL`, and `NEXT_PUBLIC_APP_URL` for your deployed domain.
-- Add a real `ANTHROPIC_API_KEY` for live AI responses.
+- Add a real `GROQ_API_KEY` for live AI responses.
 - Enable Google OAuth only after adding valid OAuth credentials.
 - Do not commit `.env` or `prisma/dev.db`.
 

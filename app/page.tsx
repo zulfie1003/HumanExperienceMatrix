@@ -56,11 +56,13 @@ export default function HomePage() {
           </Link>
           <Link href="/login">
             <Button variant="outline" size="lg" className="w-full sm:w-auto">
-              Sign in to save history
+              Login
             </Button>
           </Link>
         </div>
-        <p className="text-xs text-muted-foreground">No account required to try</p>
+        <p className="text-xs text-muted-foreground">
+          Login to save your history, or try without an account.
+        </p>
       </div>
 
       {/* Features */}

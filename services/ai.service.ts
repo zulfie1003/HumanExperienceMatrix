@@ -1,9 +1,4 @@
-import {
-  anthropicClient,
-  AI_MODEL,
-  MAX_TOKENS,
-  isAnthropicConfigured,
-} from "@/lib/claude";
+import { createGroqChatCompletion } from "@/lib/groq";
 import { SYSTEM_PROMPT, buildUserPrompt } from "@/lib/prompts";
 import { AIResponse, Perspective } from "@/types";
 
@@ -17,10 +12,6 @@ export class AIService {
     question: string,
     perspectives: Perspective[]
   ): Promise<AIResponse> {
-    if (!isAnthropicConfigured) {
-      return this.generateDemoResponse(question, perspectives);
-    }
-
     const userPrompt = buildUserPrompt(question, perspectives);
 
     // RAG hook point: before calling the LLM, you could retrieve
@@ -28,24 +19,18 @@ export class AIService {
     // const ragContext = await retrieveContext(question);
     // const augmentedPrompt = injectContext(userPrompt, ragContext);
 
-    const message = await anthropicClient.messages.create({
-      model: AI_MODEL,
-      max_tokens: MAX_TOKENS,
-      system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: userPrompt,
-        },
-      ],
-    });
+    const content = await createGroqChatCompletion([
+      {
+        role: "system",
+        content: SYSTEM_PROMPT,
+      },
+      {
+        role: "user",
+        content: userPrompt,
+      },
+    ]);
 
-    const textContent = message.content.find((block) => block.type === "text");
-    if (!textContent || textContent.type !== "text") {
-      throw new Error("No text content in AI response");
-    }
-
-    return this.parseResponse(textContent.text);
+    return this.parseResponse(content);
   }
 
   private parseResponse(rawText: string): AIResponse {
@@ -83,58 +68,6 @@ export class AIService {
         throw new Error(`Missing required field in AI response: ${field}`);
       }
     }
-  }
-
-  private generateDemoResponse(
-    question: string,
-    perspectives: Perspective[]
-  ): AIResponse {
-    const selected =
-      perspectives.includes("all") || perspectives.length === 0
-        ? "history, psychology, philosophy, entrepreneurship, science, and spirituality"
-        : perspectives.join(", ");
-
-    return {
-      situationSummary: `Demo analysis for: "${question}". Add a real ANTHROPIC_API_KEY in .env to receive live Claude responses.`,
-      underlyingPattern:
-        "The core pattern is a search for clarity under uncertainty: naming the problem, separating facts from interpretations, and choosing a next small action.",
-      historicalParallels: [
-        {
-          figure: "Marcus Aurelius",
-          era: "Roman Empire",
-          situation:
-            "Led through pressure, conflict, and incomplete information while trying to preserve judgment.",
-          lesson:
-            "Focus attention on what is controllable, then act with discipline instead of waiting for perfect certainty.",
-        },
-      ],
-      perspectiveInsights: [
-        {
-          perspective: selected,
-          insight:
-            "Across these lenses, progress usually begins when the situation is made concrete enough to test with one practical step.",
-          keyThinkers: ["Marcus Aurelius", "William James", "Carol Dweck"],
-        },
-      ],
-      repeatingPatterns: [
-        "People overestimate the need for total certainty before beginning.",
-        "Small experiments reduce anxiety faster than abstract rumination.",
-        "Writing the problem clearly often reveals the next useful move.",
-      ],
-      practicalLessons: [
-        "Define the decision or fear in one sentence.",
-        "List what is known, unknown, and controllable.",
-        "Take one reversible action within the next 24 hours.",
-      ],
-      bookRecommendations: [
-        {
-          title: "Meditations",
-          author: "Marcus Aurelius",
-          relevance:
-            "A compact guide to keeping judgment steady when life feels noisy or pressured.",
-        },
-      ],
-    };
   }
 }
 

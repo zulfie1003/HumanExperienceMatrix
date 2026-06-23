@@ -42,7 +42,7 @@ export function Navbar() {
                 <span className="hidden sm:inline">Sign out</span>
               </Button>
             </>
-          ) : status === "unauthenticated" ? (
+          ) : (
             <>
               <Link href="/ask">
                 <Button variant="ghost" size="sm">
@@ -52,11 +52,11 @@ export function Navbar() {
               <Link href="/login">
                 <Button size="sm" className="gap-1">
                   <LogIn className="h-4 w-4" />
-                  Sign in
+                  Login
                 </Button>
               </Link>
             </>
-          ) : null}
+          )}
         </div>
       </div>
     </nav>

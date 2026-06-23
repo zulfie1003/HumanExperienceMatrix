@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS "users" (
   "name" TEXT,
   "email" TEXT,
   "emailVerified" DATETIME,
+  "passwordHash" TEXT,
   "image" TEXT,
   "isGuest" BOOLEAN NOT NULL DEFAULT false,
   "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
